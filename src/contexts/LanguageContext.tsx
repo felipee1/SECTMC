@@ -88,6 +88,8 @@ const translations = {
     cancel: "Cancelar",
     save: "✅ Salvar",
     addRecipe: "Adicionar Receita",
+    search: "Buscar",
+    alreadyInCollection: "já está na sua coleção",
 
     // Production sheet
     add: "Adicionar",
@@ -222,6 +224,44 @@ const translations = {
     yourInterest:
       "Seu interesse e feedback são valiosos para fazer este projeto crescer! 🍳",
     gotIt: "Entendi!",
+
+    // Recipe Hub
+    hubTitle: "Hub de Receitas",
+    hubDesc: "Descubra novas receitas da comunidade e adicione à sua coleção",
+    addToMyRecipes: "Adicionar às minhas receitas",
+    recipeAdded: "Receita adicionada!",
+    loadingHub: "Carregando o hub...",
+    hubSearchPlaceholder: "Buscar receitas...",
+    hubCTATitle: "Sem ideias?",
+    hubCTADesc: "Explore o Hub de Receitas para descobrir novos sabores e adicionar à sua coleção!",
+    openHub: "Explorar Hub de Receitas",
+    hubLibraryTitle: "Banco de Receitas do Hub",
+    noRecipesFound: "Nenhuma receita encontrada",
+    popularRecipes: "Mais Populares",
+    searchExternalHub: "🔍 Buscar no Hub Externo (MealDB)",
+    viewDetails: "Ver Detalhes",
+    sharedBy: "Compartilhado por",
+    externalResults: "Resultados Externos",
+    
+    // Unified Search
+    unifiedSearchTitle: "Busca Unificada de Receitas",
+    unifiedSearchPlaceholder: "Busque por nome ou ID (ex: Frango ou 52772)",
+    unifiedSearchTipTitle: "Dica de Busca:",
+    unifiedSearchTipDesc: "Se você digitar números, buscaremos o ID exato. Se digitar texto, usaremos busca inteligente (Fuzzy Search) com tradução automática.",
+    searchingAndTranslating: "Consultando e traduzindo receitas...",
+    backToResults: "Voltar aos resultados",
+    saveToMyHub: "Salvar no Meu Hub",
+    youtube: "YouTube",
+    noResultsFound: "Nenhuma receita corresponde à sua busca.",
+    searchError: "Erro na busca.",
+    recipeNotFound: "Receita não encontrada.",
+    
+    // Engine
+    engineJustification: "Faça {recipe} para salvar ingredientes que estão vencendo e repor seu estoque de {category}!",
+    pantryCheckNote: "Você já tem {qty} {unit}",
+    generalSection: "Geral",
+    aiNotFoundTitle: "Gemini Nano não encontrado",
+    aiNotFoundDesc: "Ative as Flags do Chrome e baixe o modelo (Optimization Guide) em chrome://components para habilitar a tradução local.",
   },
   en: {
     appTitle: "🍳 If I Cook, Everyone Eats",
@@ -293,6 +333,8 @@ const translations = {
     cancel: "Cancel",
     save: "✅ Save",
     addRecipe: "Add Recipe",
+    search: "Search",
+    alreadyInCollection: "is already in your collection",
 
     add: "Add",
     chooseType: "Choose the type of preparation",
@@ -419,15 +461,53 @@ const translations = {
     yourInterest:
       "Your interest and feedback are valuable to make this project grow! 🍳",
     gotIt: "Got it!",
+
+    // Recipe Hub
+    hubTitle: "Recipe Hub",
+    hubDesc: "Discover new recipes from the community and add them to your collection",
+    addToMyRecipes: "Add to my recipes",
+    recipeAdded: "Recipe added!",
+    loadingHub: "Loading hub...",
+    hubSearchPlaceholder: "Search recipes...",
+    hubCTATitle: "No ideas?",
+    hubCTADesc: "Explore the Recipe Hub to discover new flavors and add them to your collection!",
+    openHub: "Explore Recipe Hub",
+    hubLibraryTitle: "Hub Recipe Library",
+    noRecipesFound: "No recipes found",
+    popularRecipes: "Most Popular",
+    searchExternalHub: "🔍 Search External Hub (MealDB)",
+    viewDetails: "View Details",
+    sharedBy: "Shared by",
+    externalResults: "External Results",
+
+    // Unified Search
+    unifiedSearchTitle: "Unified Recipe Search",
+    unifiedSearchPlaceholder: "Search by name or ID (ex: Chicken or 52772)",
+    unifiedSearchTipTitle: "Search Tip:",
+    unifiedSearchTipDesc: "If you type numbers, we will look for the exact ID. If you type text, we will use smart fuzzy search with automatic translation.",
+    searchingAndTranslating: "Searching and translating recipes...",
+    backToResults: "Back to results",
+    saveToMyHub: "Save to My Hub",
+    youtube: "YouTube",
+    noResultsFound: "No recipes match your search.",
+    searchError: "Search error.",
+    recipeNotFound: "Recipe not found.",
+
+    // Engine
+    engineJustification: "Make {recipe} to save ingredients that are about to expire and restock your {category}!",
+    pantryCheckNote: "You already have {qty} {unit}",
+    generalSection: "General",
+    aiNotFoundTitle: "Gemini Nano not found",
+    aiNotFoundDesc: "Enable Chrome Flags and download the model (Optimization Guide) at chrome://components to enable local translation.",
   },
 } as const;
 
-export type TranslationKey = keyof typeof translations.pt;
+export type TranslationKey = keyof typeof translations.pt | (string & {});
 
 interface LanguageContextType {
   lang: Language;
   setLang: (lang: Language) => void;
-  t: (key: TranslationKey) => string | string[];
+  t: (key: TranslationKey) => any;
 }
 
 const LanguageContext = createContext<LanguageContextType | null>(null);
@@ -449,7 +529,23 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   };
 
   const t = (key: TranslationKey): any => {
-    return translations[lang][key];
+    // Handle dynamic keys with placeholders like "key|p1:v1,p2:v2"
+    if (typeof key === "string" && key.includes("|")) {
+      const [realKey, paramsStr] = key.split("|");
+      let text = (translations[lang] as any)[realKey] || realKey;
+      
+      if (paramsStr) {
+        const params = paramsStr.split(",");
+        params.forEach(p => {
+          const [k, v] = p.split(":");
+          text = text.replace(`{${k}}`, v);
+        });
+      }
+      return text;
+    }
+
+    const val = (translations[lang] as any)[key];
+    return val !== undefined ? val : key;
   };
 
   return (

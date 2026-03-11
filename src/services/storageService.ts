@@ -1,6 +1,7 @@
 import { toast } from '@/hooks/use-toast';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore';
+import { recipeHubService } from './recipeHubService';
 
 const STORAGE_KEY = 'cozinha4x1';
 const CLOUD_KEY = 'cozinha4x1_cloud';
@@ -136,6 +137,12 @@ export const syncLocalToCloud = async (userId: string): Promise<void> => {
       const mergedData = mergeStorageData(localData, cloudData);
       await saveToCloud(userId, mergedData);
       saveToLocalStorage(mergedData);
+      
+      // Share recipes to global hub
+      if (mergedData.recipes && mergedData.recipes.length > 0) {
+        mergedData.recipes.forEach(r => recipeHubService.shareRecipe(r, userId));
+      }
+
       toast({
         title: 'Sync Complete',
         description: 'Your data has been synced successfully.',
@@ -143,6 +150,12 @@ export const syncLocalToCloud = async (userId: string): Promise<void> => {
     } else if (localData && !cloudData) {
       // Only local exists - upload to cloud
       await saveToCloud(userId, localData);
+      
+      // Share recipes to global hub
+      if (localData.recipes && localData.recipes.length > 0) {
+        localData.recipes.forEach(r => recipeHubService.shareRecipe(r, userId));
+      }
+
       toast({
         title: 'Sync Complete',
         description: 'Your local data has been uploaded to the cloud.',

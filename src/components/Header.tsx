@@ -1,4 +1,4 @@
-import { Settings } from "lucide-react";
+import { Settings, ChefHat } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 
@@ -12,12 +12,20 @@ export function Header() {
         <h1 className="text-sm font-bold font-fredoka text-primary leading-tight text-center">
           {t("appTitle")}
         </h1>
-        <Link
-          to="/settings"
-          className="p-2 rounded-full hover:bg-muted transition-colors"
-        >
-          <Settings className="w-5 h-5 text-muted-foreground" />
-        </Link>
+        <div className="flex items-center gap-1">
+          <Link
+            to="/hub"
+            className="p-2 rounded-full hover:bg-muted transition-colors"
+          >
+            <ChefHat className="w-5 h-5 text-muted-foreground" />
+          </Link>
+          <Link
+            to="/settings"
+            className="p-2 rounded-full hover:bg-muted transition-colors"
+          >
+            <Settings className="w-5 h-5 text-muted-foreground" />
+          </Link>
+        </div>
       </div>
     </header>
   );

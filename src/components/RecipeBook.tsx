@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Plus, Trash2, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Trash2, BookOpen, ChevronDown, ChevronUp, Sparkles, ChefHat } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,6 +22,7 @@ const STORAGE_EMOJIS: Record<StorageType, string> = { freezer: "❄️", fridge:
 
 export function RecipeBook({ open, onClose, recipes, onAdd, onRemove }: RecipeBookProps) {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [newCategory, setNewCategory] = useState<Category>("protein");
@@ -153,6 +155,33 @@ export function RecipeBook({ open, onClose, recipes, onAdd, onRemove }: RecipeBo
         </div>
 
         <AnimatePresence>
+          {!adding && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-6 p-4 rounded-2xl bg-primary/5 border border-primary/10 flex flex-col gap-3"
+            >
+              <div className="flex items-center gap-2 text-primary">
+                <Sparkles className="w-5 h-5" />
+                <h4 className="font-bold text-sm tracking-tight">{t("hubCTATitle")}</h4>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {t("hubCTADesc")}
+              </p>
+              <Button 
+                variant="outline" 
+                className="w-full rounded-xl border-primary/20 text-primary hover:bg-primary/5 h-10 gap-2 font-bold text-xs"
+                onClick={() => {
+                  onClose();
+                  navigate("/hub");
+                }}
+              >
+                <ChefHat className="w-4 h-4" />
+                {t("openHub")}
+              </Button>
+            </motion.div>
+          )}
+
           {adding && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="mt-4 space-y-3 overflow-hidden">
               <Input placeholder={t("recipeName") as string} value={newName} onChange={(e) => setNewName(e.target.value)} className="rounded-xl h-12 text-base" autoFocus />

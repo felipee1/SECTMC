@@ -14,13 +14,13 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+const app = firebaseConfig.apiKey ? initializeApp(firebaseConfig) : null;
 
 // Initialize Firebase Authentication and get a reference to the service
-export const auth = getAuth(app);
+export const auth = app ? getAuth(app) : ({} as any);
 
 // Initialize Cloud Firestore and get a reference to the service
-export const db = getFirestore(app);
+export const db = app ? getFirestore(app) : ({} as any);
 
 // Initialize Analytics (only in browser environment)
 let analytics = null;

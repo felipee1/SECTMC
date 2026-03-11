@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect } from "react";
 import { Recipe, StorageOption } from "@/types/recipe";
 import { Category } from "@/types/inventory";
+import { isCloudSyncEnabled, loadUserFromLocalStorage } from "@/services/storageService";
+import { recipeHubService } from "@/services/recipeHubService";
 
 const STORAGE_KEY = "cozinha4x1_recipes";
 
@@ -36,6 +38,15 @@ export function useRecipes() {
         created_at: new Date().toISOString().split("T")[0],
       };
       setRecipes((prev) => [...prev, recipe]);
+
+      // Global Sharing
+      if (isCloudSyncEnabled()) {
+        const user = loadUserFromLocalStorage();
+        if (user?.uid) {
+          recipeHubService.shareRecipe(recipe, user.uid);
+        }
+      }
+
       return recipe;
     },
     []

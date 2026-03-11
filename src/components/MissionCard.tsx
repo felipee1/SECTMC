@@ -45,33 +45,7 @@ interface ParsedIngredient {
   missingQty: number;
 }
 
-function parseIngredientLine(line: string): {
-  name: string;
-  qty: number;
-  unit: string;
-} {
-  const match = line.match(
-    /^(.+?)\s+(\d+(?:[.,]\d+)?)\s*(kg|g|ml|l|un|unidade|unidades|pacote|lata|dúzia|duzia|units?)$/i,
-  );
-  if (match) {
-    return {
-      name: match[1].trim(),
-      qty: parseFloat(match[2].replace(",", ".")),
-      unit: match[3].toLowerCase(),
-    };
-  }
-  return { name: line.trim(), qty: 0, unit: "" };
-}
-
-function normalizeToBaseUnit(
-  qty: number,
-  unit: string,
-): { qty: number; baseUnit: string } {
-  const u = unit.toLowerCase();
-  if (u === "kg") return { qty: qty * 1000, baseUnit: "g" };
-  if (u === "l") return { qty: qty * 1000, baseUnit: "ml" };
-  return { qty, baseUnit: u };
-}
+import { parseIngredientLine, normalizeToBaseUnit } from "@/lib/engine/utils";
 
 function formatQty(qty: number, unit: string): string {
   const u = unit.toLowerCase();
@@ -169,6 +143,11 @@ const STORAGE_EMOJIS: Record<StorageType, string> = {
   natura: "🌡️",
 };
 
+import { generateDailyMission } from "@/lib/engine/missionEngine";
+import { GlobalState, EngineRecipe } from "@/types/engine";
+
+// ... (existing helper functions if they are still needed, keeping them for now to avoid breaking other logic)
+
 export function MissionCard({
   getCategoryTotal,
   settings,
@@ -183,6 +162,7 @@ export function MissionCard({
     category: Category;
     name: string;
     recipe: Recipe | null;
+    justification?: string;
   } | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [stockQty, setStockQty] = useState(4);
@@ -203,37 +183,66 @@ export function MissionCard({
   const [lastRecipeId, setLastRecipeId] = useState<string | null>(null);
 
   const generateRecipe = () => {
-    for (const { cat } of sorted) {
-      const userRecipes = getRecipesByCategory(cat);
-      if (userRecipes.length > 0) {
-        setNoRecipesError(false);
-        const scored = userRecipes.map((r) => ({
-          recipe: r,
-          available: countAvailableIngredients(r, ingredients),
-        }));
-        scored.sort((a, b) => b.available - a.available);
-        const maxAvailable = scored[0].available;
-        let topRecipes = scored.filter((s) => s.available === maxAvailable);
-        if (topRecipes.length > 1 && lastRecipeId) {
-          topRecipes = topRecipes.filter((s) => s.recipe.uuid !== lastRecipeId);
-        }
-        const chosen =
-          topRecipes[Math.floor(Math.random() * topRecipes.length)].recipe;
-        const multiplier = getPortionMultiplier(
-          chosen.portions || 4,
-          householdSize,
-        );
-        const scaledPortions = (chosen.portions || 4) * multiplier;
-        const opts = getRecipeStorageOptions(chosen);
-        setGenerated({ category: cat, name: chosen.name, recipe: chosen });
-        setLastRecipeId(chosen.uuid);
-        setStockQty(scaledPortions);
-        setSelectedStorageOption(opts[0]);
-        setShowDetails(true);
-        return;
-      }
+    // 1. Prepare GlobalState for the engine
+    const allRecipes: EngineRecipe[] = categories.flatMap(cat => 
+      getRecipesByCategory(cat).map(r => ({
+        ...r,
+        id: r.uuid,
+        ingredients: r.ingredients.split("\n").filter(Boolean).map(line => {
+          const parsed = parseIngredientLine(line);
+          return {
+            ingredient_id: parsed.name,
+            qty_numeric: parsed.qty,
+            unit: parsed.unit,
+            is_pantry: false
+          };
+        })
+      }))
+    ) as any;
+
+    const engineState: GlobalState = {
+      recipes: allRecipes,
+      ingredients: [], 
+      raw_inventory: ingredients.map(i => ({
+        id: i.uuid,
+        ingredient_id: i.name,
+        qty_available: i.quantity,
+        unit: i.unit,
+        expires_at: i.expires_at
+      })),
+      inventory: categories.map(cat => ({
+        id: cat,
+        category: cat.toUpperCase() as any,
+        qty: getCategoryTotal(cat)
+      }))
+    };
+
+    // 2. Call the engine
+    const result = generateDailyMission(engineState);
+
+    if (result) {
+      setNoRecipesError(false);
+      const chosen = result.recipe as unknown as Recipe;
+      const multiplier = getPortionMultiplier(
+        chosen.portions || 4,
+        householdSize,
+      );
+      const scaledPortions = (chosen.portions || 4) * multiplier;
+      const opts = getRecipeStorageOptions(chosen);
+      
+      setGenerated({ 
+        category: result.criticalCategory.toLowerCase() as Category, 
+        name: chosen.name, 
+        recipe: chosen,
+        justification: result.justification
+      });
+      setLastRecipeId(chosen.uuid);
+      setStockQty(scaledPortions);
+      setSelectedStorageOption(opts[0]);
+      setShowDetails(true);
+    } else {
+      setNoRecipesError(true);
     }
-    setNoRecipesError(true);
   };
 
   const consumeIngredients = () => {
@@ -330,21 +339,30 @@ export function MissionCard({
       </div>
 
       {generated ? (
-        <div className="mb-3">
-          <p className="text-sm leading-relaxed">
-            {t("stockOf")}{" "}
-            <strong>
-              {CATEGORY_EMOJIS[generated.category]}{" "}
-              {catLabel(generated.category)}
-            </strong>{" "}
-            {criticalColor === "red"
-              ? t("isCritical")
-              : criticalColor === "yellow"
-                ? t("isLow")
-                : t("isOk")}
-            .
-          </p>
-          <p className="text-lg font-fredoka font-bold mt-1 text-primary">
+        <div className="mb-3 space-y-2">
+          {generated.justification && (
+            <div className="p-3 bg-primary/5 border border-primary/10 rounded-xl">
+              <p className="text-xs text-muted-foreground leading-relaxed italic">
+                ✨ {t(generated.justification)}
+              </p>
+            </div>
+          )}
+          {!generated.justification && (
+            <p className="text-sm leading-relaxed">
+              {t("stockOf")}{" "}
+              <strong>
+                {CATEGORY_EMOJIS[generated.category]}{" "}
+                {catLabel(generated.category)}
+              </strong>{" "}
+              {criticalColor === "red"
+                ? t("isCritical")
+                : criticalColor === "yellow"
+                  ? t("isLow")
+                  : t("isOk")}
+              .
+            </p>
+          )}
+          <p className="text-lg font-fredoka font-bold text-primary">
             {generated.name} 🔥
           </p>
           {multiplier > 1 && (

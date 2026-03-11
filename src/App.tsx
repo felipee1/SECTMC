@@ -9,6 +9,9 @@ import { Component, ReactNode } from "react";
 import Index from "./pages/Index";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import { lazy, Suspense } from "react";
+
+const HubRecipes = lazy(() => import("./pages/HubRecipes"));
 
 const queryClient = new QueryClient();
 
@@ -52,6 +55,11 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/settings" element={<Settings />} />
+                <Route path="/hub" element={
+                  <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>}>
+                    <HubRecipes />
+                  </Suspense>
+                } />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </HashRouter>

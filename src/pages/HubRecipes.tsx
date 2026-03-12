@@ -11,7 +11,7 @@ import { recipeHubService } from "@/services/recipeHubService";
 import { Recipe } from "@/types/recipe";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
-import { UnifiedRecipeSearch } from "@/components/UnifiedRecipeSearch";
+import { SmartRecipeSearch } from "@/components/SmartRecipeSearch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { RecipeDetailDialog } from "@/components/RecipeDetailDialog";
 import { ExternalRecipeDetail } from "@/services/recipeService";
@@ -259,7 +259,7 @@ const HubRecipes = () => {
             <DialogDescription>{t("hubDesc")}</DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <UnifiedRecipeSearch onSave={handleSaveExternal} />
+            <SmartRecipeSearch onSave={handleSaveExternal} />
           </div>
         </DialogContent>
       </Dialog>

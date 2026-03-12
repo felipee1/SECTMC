@@ -30,6 +30,8 @@ export interface AppSettings {
   threshold_red: number;
   threshold_yellow: number;
   household_size: number;
+  ai_enabled?: boolean;
+  ai_model_id?: string;
 }
 
 export interface AppData {
@@ -42,13 +44,15 @@ export const DEFAULT_SETTINGS: AppSettings = {
   threshold_red: 2,
   threshold_yellow: 5,
   household_size: 2,
+  ai_enabled: false,
+  ai_model_id: "Qwen2-1.5B-Instruct-q4f32_1-MLC",
 };
 
 export const CATEGORY_LABELS: Record<Category, string> = {
-  protein: "Proteína",
-  carb: "Carboidrato",
-  veggie: "Legumes",
-  flavor: "Molhos/Conservas",
+  protein: "Protein",
+  carb: "Carbohydrate",
+  veggie: "Vegetables",
+  flavor: "Sauces/Preserves",
 };
 
 export const CATEGORY_EMOJIS: Record<Category, string> = {
@@ -60,7 +64,7 @@ export const CATEGORY_EMOJIS: Record<Category, string> = {
 
 export const LOCATION_LABELS: Record<Location, string> = {
   freezer: "Freezer",
-  fridge: "Geladeira",
+  fridge: "Fridge",
 };
 
 export const LOCATION_EMOJIS: Record<Location, string> = {
@@ -69,17 +73,17 @@ export const LOCATION_EMOJIS: Record<Location, string> = {
 };
 
 export const SUBTYPE_LABELS: Record<Subtype, string> = {
-  beef: "Carne",
-  chicken: "Frango",
-  pork: "Porco",
-  fish: "Peixe",
+  beef: "Beef",
+  chicken: "Chicken",
+  pork: "Pork",
+  fish: "Fish",
 };
 
 export const SUBTYPE_SIGLAS: Record<Subtype, string> = {
-  beef: "CARN",
-  chicken: "FRAN",
-  pork: "PORC",
-  fish: "PEIX",
+  beef: "BEEF",
+  chicken: "CHIC",
+  pork: "PORK",
+  fish: "FISH",
 };
 
 export function generateLabel(item: InventoryItem): string {

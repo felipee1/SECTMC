@@ -12,8 +12,8 @@ export const UNIT_OPTIONS = [
   "kg",
   "ml",
   "L",
-  "unidade",
-  "pacote",
-  "lata",
-  "dúzia",
+  "unit",
+  "package",
+  "can",
+  "dozen",
 ] as const;

@@ -5,8 +5,9 @@ export interface ExternalRecipeDetail {
   name: string;
   category: string;
   instructions: string;
-  ingredients: string; // Lista formatada como string (um por linha)
+  ingredients: string; // Formatted as string (one per line)
   imageUrl: string;
+  source: string; // "MealDB" or "Community"
   youtubeUrl?: string;
 }
 
@@ -14,14 +15,14 @@ const THEMEALDB_LOOKUP_URL = "https://www.themealdb.com/api/json/v1/1/lookup.php
 const THEMEALDB_SEARCH_URL = "https://www.themealdb.com/api/json/v1/1/search.php";
 
 /**
- * Busca e processa uma receita do TheMealDB por ID
+ * Fetches and processes a recipe from TheMealDB by ID
  */
 export async function getExternalRecipeById(id: string, targetLang: string = "pt"): Promise<ExternalRecipeDetail> {
   const response = await fetch(`${THEMEALDB_LOOKUP_URL}?i=${id}`);
   const data = await response.json();
 
   if (!data.meals || data.meals.length === 0) {
-    throw new Error("Receita não encontrada.");
+    throw new Error("Recipe not found.");
   }
 
   const meal = data.meals[0];
@@ -29,15 +30,15 @@ export async function getExternalRecipeById(id: string, targetLang: string = "pt
 }
 
 /**
- * Busca receitas pelo nome no TheMealDB
+ * Searches for recipes by name on TheMealDB
  */
 export async function searchExternalRecipesByName(name: string, targetLang: string = "pt"): Promise<ExternalRecipeDetail[]> {
   const response = await fetch(`${THEMEALDB_SEARCH_URL}?s=${name}`);
   const data = await response.json();
 
   if (!data.meals) return [];
-
-  // Processamos apenas as 5 primeiras para evitar overload de tradução e rate limit
+  
+  // Process only the first 5 to avoid translation overload and rate limits
   const processedMeals = await Promise.all(
     data.meals.slice(0, 5).map((meal: any) => processMealData(meal, targetLang))
   );
@@ -46,10 +47,10 @@ export async function searchExternalRecipesByName(name: string, targetLang: stri
 }
 
 /**
- * Função interna para limpar e traduzir os dados de uma receita ("meal")
+ * Internal function to clean and translate meal data
  */
 async function processMealData(meal: any, targetLang: string): Promise<ExternalRecipeDetail> {
-  // 1. Limpeza de Ingredientes
+  // 1. Ingredients Cleanup
   const ingredientList: string[] = [];
   for (let i = 1; i <= 20; i++) {
     const ingredient = meal[`strIngredient${i}`];
@@ -60,7 +61,7 @@ async function processMealData(meal: any, targetLang: string): Promise<ExternalR
     }
   }
 
-  // Se o idioma de destino for inglês, não traduzimos (os dados originais são em inglês)
+  // If target language is English, skip translation (original data is in English)
   if (targetLang === "en") {
     return {
       id: meal.idMeal,
@@ -69,11 +70,12 @@ async function processMealData(meal: any, targetLang: string): Promise<ExternalR
       instructions: meal.strInstructions,
       ingredients: ingredientList.join("\n"),
       imageUrl: meal.strMealThumb,
+      source: "MealDB",
       youtubeUrl: meal.strYoutube
     };
   }
 
-  // 2. Tradução para Português
+  // 2. Translate to Portuguese
   const [translatedName, translatedCategory, translatedInstructions, translatedIngredients] = await Promise.all([
     translateText(meal.strMeal),
     translateText(meal.strCategory),
@@ -88,6 +90,7 @@ async function processMealData(meal: any, targetLang: string): Promise<ExternalR
     instructions: translatedInstructions,
     ingredients: translatedIngredients,
     imageUrl: meal.strMealThumb,
+    source: "MealDB",
     youtubeUrl: meal.strYoutube
   };
 }

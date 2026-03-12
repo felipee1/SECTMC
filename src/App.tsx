@@ -5,10 +5,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { HashRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { InventoryProvider } from "@/contexts/InventoryContext";
+import { AIProvider } from "@/contexts/AIContext";
 import { Component, ReactNode } from "react";
 import Index from "./pages/Index";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
+import { ChefAIChat } from "@/components/ChefAIChat";
 import { lazy, Suspense } from "react";
 
 const HubRecipes = lazy(() => import("./pages/HubRecipes"));
@@ -48,22 +51,27 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <LanguageProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <HashRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/hub" element={
-                  <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>}>
-                    <HubRecipes />
-                  </Suspense>
-                } />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </HashRouter>
-          </TooltipProvider>
+          <InventoryProvider>
+            <AIProvider>
+              <ChefAIChat />
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <HashRouter>
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/settings" element={<Settings />} />
+                    <Route path="/hub" element={
+                      <Suspense fallback={<div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>}>
+                        <HubRecipes />
+                      </Suspense>
+                    } />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                </HashRouter>
+              </TooltipProvider>
+            </AIProvider>
+          </InventoryProvider>
         </LanguageProvider>
       </ThemeProvider>
     </QueryClientProvider>

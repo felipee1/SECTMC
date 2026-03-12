@@ -24,6 +24,7 @@ export interface Recipe {
   storage?: StorageType;
   storageOptions: StorageOption[];
   created_at: string;
+  tags?: string[];
 }
 
 /** Helper to get storage options from a recipe, handling legacy single-storage field */

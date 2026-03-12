@@ -1,11 +1,11 @@
 /**
- * Utilitário de tradução usando exclusivamente Built-in AI (Gemini Nano)
+ * Translation utility using exclusively Built-in AI (Gemini Nano)
  * API: window.ai.translator / window.translation
  */
 
-const MAX_CHARS = 1000; // Built-in AI costuma suportar mais que MyMemory
+const MAX_CHARS = 1000; // Built-in AI usually supports more than MyMemory
 
-// Tipagem básica para a API experimental de tradução do Chrome
+// Basic types for Chrome's experimental translation API
 interface TranslationAPI {
   canTranslate: (options: { sourceLanguage: string; targetLanguage: string }) => Promise<string>;
   createTranslator: (options: { sourceLanguage: string; targetLanguage: string }) => Promise<any>;
@@ -21,19 +21,31 @@ declare global {
 }
 
 /**
- * Verifica se a API de tradução embutida está disponível
+ * Checks if the built-in translation API is available
  */
 async function getBuiltInTranslator(source: string, target: string) {
   try {
-    const api = window.ai?.translator || window.translation;
+    // Tries to find the API in different locations (may vary by Chrome version)
+    const api = (window as any).translation || window.ai?.translator || (window.ai as any)?.translation;
     
     if (!api) {
+      console.warn("Built-in translation API (Gemini Nano) not found. Ensure you are in a secure context (HTTPS) and flags are enabled.");
       throw new Error("aiNotFoundTitle");
     }
 
     const capability = await api.canTranslate({ sourceLanguage: source, targetLanguage: target });
+    console.log(`Translation capability (${source} -> ${target}):`, capability);
+
     if (capability === "no") {
       throw new Error("aiNotFoundTitle");
+    }
+
+    // If downloading, still throw error to show visual warning on how to configure/wait
+    if (capability === "after-download") {
+      console.info("Translation model is downloading. Please wait a moment.");
+      // Optionally return the translator and let 'translate' fail or wait,
+      // but throwing the error keeps the user informed via UI.
+      throw new Error("aiNotFoundTitle"); 
     }
 
     return await api.createTranslator({ sourceLanguage: source, targetLanguage: target });
@@ -41,7 +53,7 @@ async function getBuiltInTranslator(source: string, target: string) {
     if (error instanceof Error && error.message === "aiNotFoundTitle") {
       throw error;
     }
-    console.error("Erro ao verificar Built-in AI:", error);
+    console.error("Error checking Built-in AI:", error);
     return null;
   }
 }
@@ -58,13 +70,13 @@ export async function translateToEnglish(text: string): Promise<string> {
   try {
     return await translator.translate(text);
   } catch (error) {
-    console.error("Erro na tradução do Gemini Nano (PT->EN):", error);
+    console.error("Gemini Nano translation error (PT->EN):", error);
     return text;
   }
 }
 
 /**
- * Traduz um texto curto de Inglês para Português usando Gemini Nano.
+ * Translates a short text from English to Portuguese using Gemini Nano.
  */
 export async function translateText(text: string): Promise<string> {
   if (!text || text.trim() === "") return "";
@@ -75,13 +87,13 @@ export async function translateText(text: string): Promise<string> {
   try {
     return await translator.translate(text);
   } catch (error) {
-    console.error("Erro na tradução do Gemini Nano (EN->PT):", error);
+    console.error("Gemini Nano translation error (EN->PT):", error);
     return text;
   }
 }
 
 /**
- * Traduz textos longos dividindo em frases ou linhas para respeitar limites do modelo
+ * Translates long texts by splitting into sentences or lines to respect model limits.
  */
 export async function translateLongText(text: string): Promise<string> {
   if (!text || text.trim() === "") return "";
@@ -120,7 +132,7 @@ export async function translateLongText(text: string): Promise<string> {
     
     return translatedChunks.join(hasManyLines && hasLittlePunctuation ? "\n" : " ");
   } catch (error) {
-    console.error("Erro na tradução de texto longo (Gemini Nano):", error);
+    console.error("Long text translation error (Gemini Nano):", error);
     return text;
   }
 }

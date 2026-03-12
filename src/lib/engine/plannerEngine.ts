@@ -7,19 +7,19 @@ import {
 } from "../../types/engine";
 
 /**
- * MÓDULO 2: Assistente de Compras Inteligente (Estratégia Âncora e Subtração)
+ * MODULE 2: Smart Shopping Assistant (Anchor and Subtraction Strategy)
  */
 
 export const SmartPlannerEngine = {
   /**
-   * Função A: findOverlappingRecipes
-   * Sugere receitas satélite baseadas em ingredientes frescos comuns.
+   * Function A: findOverlappingRecipes
+   * Suggests satellite recipes based on common fresh ingredients.
    */
   findOverlappingRecipes(anchorRecipeId: string, state: GlobalState): EngineRecipe[] {
     const anchor = state.recipes.find(r => r.id === anchorRecipeId);
     if (!anchor) return [];
-
-    // Pegue os ingredientes frescos (não despensa) da âncora
+ 
+    // Get fresh ingredients (not pantry) from the anchor
     const freshIngredients = anchor.ingredients
       .filter(ing => !ing.is_pantry)
       .map(ing => ing.ingredient_id);
@@ -43,14 +43,14 @@ export const SmartPlannerEngine = {
   },
 
   /**
-   * Função B: generateSmartShoppingList
-   * Gera a lista de compras consolidada e subtraída do estoque.
+   * Function B: generateSmartShoppingList
+   * Generates consolidated shopping list subtracted from stock.
    */
   generateSmartShoppingList(selectedRecipeIds: string[], state: GlobalState): SmartShoppingList {
     const grossNeeds: Record<string, { qty: number, unit: string }> = {};
     const checkPantry: Set<string> = new Set();
-
-    // 1. Passo 1: Necessidade Bruta
+ 
+    // 1. Step 1: Gross Needs
     selectedRecipeIds.forEach(id => {
       const recipe = state.recipes.find(r => r.id === id);
       if (!recipe) return;
@@ -70,16 +70,16 @@ export const SmartPlannerEngine = {
         grossNeeds[key].qty += ing.qty_numeric;
       });
     });
-
-    // 2. Passo 2 & 3: Necessidade Líquida e Agrupamento
+ 
+    // 2. Step 2 & 3: Net Needs and Grouping
     const shoppingList: ShoppingListSection = {};
 
     Object.entries(grossNeeds).forEach(([key, need]) => {
       const [ingredient_id] = key.split("_");
       const master = state.ingredients.find(m => m.id === ingredient_id);
       if (!master) return;
-
-      // Busca estoque atual
+ 
+      // Fetch current stock
       const inStock = state.raw_inventory
         .filter(ri => ri.ingredient_id === ingredient_id && ri.unit === need.unit)
         .reduce((sum, item) => sum + item.qty_available, 0);

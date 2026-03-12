@@ -262,6 +262,17 @@ const translations = {
     generalSection: "Geral",
     aiNotFoundTitle: "Gemini Nano não encontrado",
     aiNotFoundDesc: "Ative as Flags do Chrome e baixe o modelo (Optimization Guide) em chrome://components para habilitar a tradução local.",
+    
+    // AI Assistant
+    aiAssistant: "🤖 Assistente Chef (Local)",
+    aiEnabled: "Habilitar IA Local (WebLLM)",
+    aiModel: "Modelo do Agente",
+    aiAssistantDesc: "Raciocínio on-device com LangGraph. Suas receitas nunca saem do navegador.",
+    initializingModel: "Inicializando modelo...",
+    downloadProgress: "Baixando: {{progress}}%",
+    modelReady: "IA Pronta para uso",
+    hardwareError: "Erro de Hardware",
+    webGPUNotSupported: "WebGPU não detectado ou incompatível com este modelo. Verifique se seu navegador e GPU suportam WebGPU (Arquitetura Pascal detectada - usando f32).",
   },
   en: {
     appTitle: "🍳 If I Cook, Everyone Eats",
@@ -499,6 +510,17 @@ const translations = {
     generalSection: "General",
     aiNotFoundTitle: "Gemini Nano not found",
     aiNotFoundDesc: "Enable Chrome Flags and download the model (Optimization Guide) at chrome://components to enable local translation.",
+    
+    // AI Assistant
+    aiAssistant: "🤖 Chef Assistant (Local)",
+    aiEnabled: "Enable Local AI (WebLLM)",
+    aiModel: "Agent Model",
+    aiAssistantDesc: "On-device reasoning with LangGraph. Your recipes never leave the browser.",
+    initializingModel: "Initializing model...",
+    downloadProgress: "Downloading: {{progress}}%",
+    modelReady: "AI Ready to use",
+    hardwareError: "Hardware Error",
+    webGPUNotSupported: "WebGPU not detected or incompatible. Ensure your browser and GPU support WebGPU (Pascal architecture - using f32 quants).",
   },
 } as const;
 

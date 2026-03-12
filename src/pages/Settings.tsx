@@ -11,7 +11,16 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAI } from "@/contexts/AIContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { toast } from "@/hooks/use-toast";
 import {
@@ -38,28 +47,32 @@ import {
   setCloudSyncEnabled,
   syncLocalToCloud,
 } from "@/services/storageService";
-import { AppSettings, DEFAULT_SETTINGS } from "@/types/inventory";
+import { DEFAULT_SETTINGS } from "@/types/inventory";
+import { useInventory } from "@/hooks/useInventory";
 import {
   ArrowLeft,
+  Bot,
   Cloud,
   Globe,
   Lock,
   LogOut,
   Mail,
   Moon,
+  Sparkles,
   Sun,
+  TriangleAlert,
   User,
   UserPlus,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
-const STORAGE_KEY = "cozinha4x1";
-
 export default function Settings() {
-  const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  const { data, updateSettings } = useInventory();
+  const [settings, setSettings] = useState(data.settings);
   const { theme, toggleTheme } = useTheme();
   const { lang, setLang, t } = useLanguage();
+  const { loadingProgress, isInitializing, modelReady, hardwareError, initEngine } = useAI();
   const [cloudEnabled, setCloudEnabled] = useState(isCloudSyncEnabled());
   const [cloudUser, setCloudUser] = useState<CloudUser | null>(
     loadUserFromLocalStorage(),
@@ -72,18 +85,6 @@ export default function Settings() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-
-  // Load settings from local storage on mount
-  useEffect(() => {
-    try {
-      const data = loadFromLocalStorage();
-      if (data?.settings) {
-        setSettings(data.settings);
-      }
-    } catch (error) {
-      console.error("Error loading settings:", error);
-    }
-  }, []);
 
   // Listen for auth state changes
   useEffect(() => {
@@ -206,16 +207,15 @@ export default function Settings() {
     }
   };
 
+  // Sync settings state with global data
+  useEffect(() => {
+    setSettings(data.settings);
+  }, [data.settings]);
+
   // Save settings
   const save = () => {
     try {
-      const data = loadFromLocalStorage() || {
-        inventory: [],
-        history: {},
-        settings: DEFAULT_SETTINGS,
-      };
-      data.settings = settings;
-      saveToLocalStorage(data);
+      updateSettings(settings);
 
       // If cloud sync is enabled and user is logged in, sync to cloud
       if (cloudEnabled && cloudUser) {
@@ -402,6 +402,102 @@ export default function Settings() {
               </Button>
             </div>
           </div>
+        </div>
+
+        {/* Chef AI Assistant */}
+        <div className="bg-card rounded-2xl p-5 shadow-sm border space-y-4">
+          <div className="flex items-center gap-2">
+            <Bot className="w-5 h-5 text-primary" />
+            <h2 className="font-fredoka font-semibold">{t("aiAssistant")}</h2>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Sparkles className="w-5 h-5 text-yellow-500" />
+              <div>
+                <span className="text-sm font-semibold block">
+                  {t("aiEnabled")}
+                </span>
+                <span className="text-xs text-muted-foreground mr-8 block">
+                  {t("aiAssistantDesc")}
+                </span>
+              </div>
+            </div>
+            <Switch
+              checked={settings.ai_enabled}
+              onCheckedChange={(checked) => {
+                const newSettings = { ...settings, ai_enabled: checked };
+                setSettings(newSettings);
+                // For AI, we want it to react immediately so the model starts loading/unloading
+                updateSettings(newSettings);
+              }}
+            />
+          </div>
+
+          {settings.ai_enabled && (
+            <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold">{t("aiModel")}</label>
+                <Select
+                  value={settings.ai_model_id}
+                  onValueChange={(value) => {
+                    const newSettings = { ...settings, ai_model_id: value };
+                    setSettings(newSettings);
+                    updateSettings(newSettings);
+                  }}
+                  disabled={isInitializing || modelReady}
+                >
+                  <SelectTrigger className="rounded-xl h-11">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Qwen2-1.5B-Instruct-q4f32_1-MLC">
+                      Qwen 2 1.5B (f32 - Pascal Safe)
+                    </SelectItem>
+                    <SelectItem value="Phi-3-mini-4k-instruct-q4f32_1-MLC">
+                      Phi-3 Mini (f32 - Stable)
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {hardwareError && (
+                <div className="flex flex-col gap-3 bg-destructive/10 border border-destructive/20 p-4 rounded-xl text-destructive">
+                  <div className="flex items-center gap-2">
+                    <TriangleAlert className="w-5 h-5" />
+                    <span className="font-bold">{t("hardwareError")}</span>
+                  </div>
+                  <p className="text-xs leading-relaxed">{t("webGPUNotSupported")}</p>
+                  <p className="text-[10px] font-mono opacity-70 break-all">{hardwareError}</p>
+                </div>
+              )}
+
+              {!modelReady ? (
+                <Button 
+                  className="w-full h-11 rounded-xl font-bold"
+                  onClick={initEngine}
+                  disabled={isInitializing || !!hardwareError}
+                >
+                  {isInitializing ? t("initializingModel") : "Download & Initialize Model (f32)"}
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2 text-green-600 bg-green-50 dark:bg-green-900/20 p-3 rounded-xl border border-green-200 dark:border-green-800">
+                  <div className="w-2 h-2 rounded-full bg-green-600 animate-pulse" />
+                  <span className="text-sm font-semibold">{t("modelReady")}</span>
+                </div>
+              )}
+
+              {isInitializing && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-xs font-medium">
+                    <span>{t(`downloadProgress|progress:${loadingProgress}`)}</span>
+                    <span>{loadingProgress}%</span>
+                  </div>
+                  <Progress value={loadingProgress} className="h-2" />
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Semaphore */}

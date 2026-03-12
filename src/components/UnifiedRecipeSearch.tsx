@@ -48,8 +48,8 @@ export function UnifiedRecipeSearch({ onSave }: UnifiedRecipeSearchProps) {
         setSelectedRecipe(recipe);
         setResults([recipe]);
       } else {
-        // Se estivermos em EN, não precisamos traduzir a query (já está em EN ou o usuário quer em EN)
-        // Se estivermos em PT, traduzimos para EN para que o MealDB entenda
+        // If we are in EN, we don't need to translate the query
+        // If we are in PT, we translate to EN so MealDB can understand
         const englishQuery = lang === "en" ? query : await translateToEnglish(query);
         const found = await searchExternalRecipesByName(englishQuery, lang);
         setResults(found);

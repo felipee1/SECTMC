@@ -6,33 +6,33 @@ import {
 } from "../../types/engine";
 
 /**
- * MÓDULO 1: Algoritmo "O Que Cozinhar Hoje?" (Priorização FEFO)
+ * MODULE 1: "What to Cook Today?" Algorithm (FEFO Prioritization)
  */
 
 export function generateDailyMission(state: GlobalState): DailyMissionResult | null {
   if (state.recipes.length === 0) return null;
-
-  // 1. Passo 1: Identificar o Gargalo (Categoria Crítica)
+ 
+  // 1. Step 1: Identify the Bottleneck (Critical Category)
   const categories: ("PROTEIN" | "CARB" | "VEGGIE")[] = ["PROTEIN", "CARB", "VEGGIE"];
   
-  // Inicializa contagem com 0 para todas as categorias
+  // Initialize counts with 0 for all categories
   const counts: Record<string, number> = { PROTEIN: 0, CARB: 0, VEGGIE: 0 };
   state.inventory.forEach(item => {
     if (counts[item.category] !== undefined) {
       counts[item.category] += item.qty;
     }
   });
-
-  // Encontra a categoria com menos potes (em caso de empate, pega a primeira)
+ 
+  // Find the category with fewer containers (in case of a tie, take the first one)
   const criticalCategory = categories.reduce((min, cat) => 
     counts[cat] < counts[min] ? cat : min, categories[0]
   );
-
-  // 2. Passo 2: Filtragem de Receitas
+ 
+  // 2. Step 2: Recipe Filtering
   const filteredRecipes = state.recipes.filter(r => r.category.toUpperCase() === criticalCategory);
   
   if (filteredRecipes.length === 0) {
-    // Se não houver receitas na categoria crítica, tenta em todas as receitas
+    // If there are no recipes in the critical category, try all recipes
     return scoreAndSelect(state.recipes, criticalCategory, state.raw_inventory);
   }
 
@@ -52,7 +52,7 @@ function scoreAndSelect(
     let urgentItemsCount = 0;
 
     recipe.ingredients.forEach(ing => {
-      // Busca ingrediente no inventário de matéria-prima
+      // Search for ingredient in raw inventory
       const invItem = rawInventory.find(ri => ri.ingredient_id === ing.ingredient_id && ri.qty_available > 0);
       
       if (invItem) {
@@ -76,13 +76,13 @@ function scoreAndSelect(
     return { recipe, score, urgentItemsCount, savedIngredients };
   });
 
-  // Ordena pelo maior score
+  // Sort by highest score
   scoredRecipes.sort((a, b) => b.score - a.score);
   
   const top = scoredRecipes[0];
   if (!top) return null;
-
-  // Justificativa estruturada para i18n
+ 
+  // Structured justification for i18n
   const justification = `engineJustification|recipe:${top.recipe.name},category:${criticalCategory}`;
 
   return {
